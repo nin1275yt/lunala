@@ -1,9 +1,10 @@
 package org.firstinspires.ftc.teamcode.config.lunala;
 
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.seattlesolvers.solverslib.util.InterpLUT;
 
 public class Constants {
-    public static class LEDC {
+    public static class LED {
         public static double INIT = 1;
         public static double FULL = 0.72;
         public static double ERROR = 0.279;
@@ -21,6 +22,17 @@ public class Constants {
         );
         public static double distance_offset = 0;
         public static double shooter_offset = 0;
+        public static InterpLUT generateLUT() {
+            InterpLUT lut = new InterpLUT();
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.createLUT();
+            return lut;
+        }
     }
 
     public static class NECTAR {
@@ -32,6 +44,17 @@ public class Constants {
         );
         public static double distance_offset = 0;
         public static double shooter_offset = 0;
+        public static InterpLUT generateLUT() {
+            InterpLUT lut = new InterpLUT();
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.add(0000, 0.0);
+            lut.createLUT();
+            return lut;
+        }
     }
 
 }

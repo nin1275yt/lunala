@@ -11,7 +11,7 @@ public class LEDSS {
         this.init();
     }
     private void init() {
-        led.setPosition(Constants.LEDC.INIT);
+        led.setPosition(Constants.LED.INIT);
     }
     public void setColor(double color) {
         led.setPosition(color);
