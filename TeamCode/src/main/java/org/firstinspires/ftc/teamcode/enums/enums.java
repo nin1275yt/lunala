@@ -15,4 +15,12 @@ public class enums {
         ALIGNED,
         TURNING
     }
+    public enum ALLIANCE {
+        BLUE,
+        RED
+    }
+    public enum STARTING_POS {
+        TOP,
+        BOTTOM
+    }
 }

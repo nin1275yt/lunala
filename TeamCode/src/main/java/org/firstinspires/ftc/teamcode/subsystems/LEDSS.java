@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.config.lunala.Constants;
 
 public class LEDSS {
-    private Servo led;
+    private final Servo led;
     public LEDSS(Servo led) {
         this.led = led;
         this.init();
