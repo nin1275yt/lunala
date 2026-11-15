@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.testCode;
 
-import com.bylazar.gamepad.PanelsGamepad;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -23,9 +22,9 @@ public class mecanumTest extends LinearOpMode {
         waitForStart();
         if (isStopRequested()) return;
         while (opModeIsActive()) {
-            double y = -PanelsGamepad.INSTANCE.getFirstManager().getLeftStickY();
-            double x = PanelsGamepad.INSTANCE.getFirstManager().getLeftStickX();
-            double rx = PanelsGamepad.INSTANCE.getFirstManager().getRightStickX();
+            double y = -gamepad1.left_stick_y;
+            double x = gamepad1.left_stick_x;
+            double rx = gamepad1.right_stick_x;
             double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
             double frontLeftPower = (y + x + rx) / denominator;
             double backLeftPower = (y - x + rx) / denominator;
