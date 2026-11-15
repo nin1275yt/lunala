@@ -1,9 +1,11 @@
-package org.firstinspires.ftc.teamcode.teleop;
+package org.firstinspires.ftc.teamcode.teleop.lunala;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.math.Pose;
+import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -28,13 +30,8 @@ import org.firstinspires.ftc.teamcode.utils.TelemetryM;
 @Configurable
 @TeleOp(name = "Main V1", group = ".ftc35707")
 public class MainV1 extends OpMode {
-    // motors
-    private DcMotorEx shooterP, shooterN, intake, transfer;
-    //servos
-    private Servo hoodP, hoodN, stopper, flower, leds;
-    private CombinedServo turretP, turretN; // 4x axon mini
-    // sensors
-    private GoBildaPinpointDriver pinpoint;
+    private DcMotorEx intake, transfer;
+    private Servo stopper, flower;
     private Follower follower;
     private DigitalChannel bb, c1, c2;
     TelemetryM telemetryM;
@@ -50,6 +47,8 @@ public class MainV1 extends OpMode {
     private enums.ALLIANCE alliance;
     private enums.STARTING_POS startPos;
     private final PolygonZone robotZone = new PolygonZone(18, 18);
+    private final Timer loop = new Timer();
+    private boolean debug = false;
 
     @Override
     public void init() {
@@ -57,26 +56,28 @@ public class MainV1 extends OpMode {
                 .prompt("start_pos", new OptionPrompt<>("Starting Position", enums.STARTING_POS.TOP, enums.STARTING_POS.BOTTOM))
                 .onComplete(this::onPromptsComplete);
         // motors
-        shooterP = hardwareMap.get(DcMotorEx.class, "shooterP");
-        shooterN = hardwareMap.get(DcMotorEx.class, "shooterN");
-        intake = hardwareMap.get(DcMotorEx.class, "intake");
-        transfer = hardwareMap.get(DcMotorEx.class, "transfer");
+        DcMotorEx shooterP = hardwareMap.get(DcMotorEx.class, "shooterP"); // 6000 rpm
+        DcMotorEx shooterN = hardwareMap.get(DcMotorEx.class, "shooterN"); // 6000 rpm
+        intake = hardwareMap.get(DcMotorEx.class, "intake"); // 2200 rpm
+        transfer = hardwareMap.get(DcMotorEx.class, "transfer"); // 2000 rpm
         // servos
-        hoodP = hardwareMap.get(Servo.class, "hoodP");
-        hoodN = hardwareMap.get(Servo.class, "hoodN");
-        stopper = hardwareMap.get(Servo.class, "stopper");
-        flower = hardwareMap.get(Servo.class, "flower");
-        leds = hardwareMap.get(Servo.class, "leds");
-        turretP = new CombinedServo(hardwareMap.get(Servo.class, "turretP1"), hardwareMap.get(Servo.class, "turretP2"));
-        turretN = new CombinedServo(hardwareMap.get(Servo.class, "turretN1"), hardwareMap.get(Servo.class, "turretN2"));
+        //servos
+        Servo hoodP = hardwareMap.get(Servo.class, "hoodP"); // 1x swyft speed
+        Servo hoodN = hardwareMap.get(Servo.class, "hoodN"); // 1x swyft speed
+        stopper = hardwareMap.get(Servo.class, "stopper"); // 1x swyft speed
+        flower = hardwareMap.get(Servo.class, "flower"); // 1x axon max
+        Servo leds = hardwareMap.get(Servo.class, "leds"); // 2x gobilda leds
+        CombinedServo turretP = new CombinedServo(hardwareMap.get(Servo.class, "turretP1"), hardwareMap.get(Servo.class, "turretP2")); // 2x axon mini
+        CombinedServo turretN = new CombinedServo(hardwareMap.get(Servo.class, "turretN1"), hardwareMap.get(Servo.class, "turretN2")); // 2x axon mini
         // sensors
         follower = org.firstinspires.ftc.teamcode.pedro.Constants.create(hardwareMap);
         bb = hardwareMap.get(DigitalChannel.class, "bb");
         c1 = hardwareMap.get(DigitalChannel.class, "c1");
         c2 = hardwareMap.get(DigitalChannel.class, "c2");
-        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        // sensors
+        GoBildaPinpointDriver pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         MultipleTelemetry telemetry = new MultipleTelemetry(this.telemetry, PanelsTelemetry.INSTANCE.getFtcTelemetry());
-        telemetryM = new TelemetryM(telemetry, true);
+        telemetryM = new TelemetryM(telemetry, debug);
         // reverse
         shooterP.setDirection(DcMotorSimple.Direction.REVERSE);
         // reset mode
@@ -115,20 +116,24 @@ public class MainV1 extends OpMode {
             if (alliance == enums.ALLIANCE.BLUE) follower.setPose(Constants.POSES.startPoses[3]);
         }
         telemetryM.addLine("LUNALA Team 35707");
+        telemetryM.addLine(true, "------DEBUG------");
         telemetryM.addLine(true, "INIT DONE!");
         telemetryM.addData(true, "Alliance", alliance);
         telemetryM.addData(true, "Starting pos", startPos);
+        telemetryM.addLine(true, "------DEBUG------");
         telemetryM.update();
     }
 
     @Override
     public void init_loop() {
         prompter.run();
+        if (gamepad1.optionsWasPressed()) telemetryM.setDebug(debug = !debug);
     }
 
     @Override
     public void start() {
         flower.setPosition(Constants.FLOWER.IDLE);
+        loop.reset();
     }
 
     @Override
@@ -144,6 +149,7 @@ public class MainV1 extends OpMode {
                         nectarSS.getStatus() == enums.shooter.READY &&
                         pollenTS.getStatus() == enums.turret.ALIGNED &&
                         nectarTS.getStatus() == enums.turret.ALIGNED;
+        boolean full = false;
         // updates
         follower.update();
         pollenSS.update(follower);
@@ -154,8 +160,10 @@ public class MainV1 extends OpMode {
         robotZone.setRotation(follower.pose().heading());
         if (robotZone.isInside(Constants.POSES.BOTTOM_ZONE)) target = alliance == enums.ALLIANCE.RED ? Constants.POSES.targets[2] : Constants.POSES.targets[3];
         else target = alliance == enums.ALLIANCE.RED ? Constants.POSES.targets[0] : Constants.POSES.targets[1];
+        if (gamepad1.optionsWasPressed()) telemetryM.setDebug(debug = !debug);
         // drive
-        follower.manual(
+        ManualDrive.driveOrHold(
+                follower,
                 -gamepad1.left_stick_y,  // forward
                 gamepad1.left_stick_x,  // lateral
                 gamepad1.right_stick_x // turn
@@ -169,7 +177,7 @@ public class MainV1 extends OpMode {
         stopper.setPosition(FEED && ready
                 ? Constants.STOPPER.OPEN
                 : Constants.STOPPER.CLOSE);
-        if (INTAKE || (FEED && ready)) {
+        if ((INTAKE && !full) || (FEED && ready)) {
             intake.setPower(1);
             transfer.setPower(1);
         } else if (OUTTAKE) {
@@ -190,13 +198,18 @@ public class MainV1 extends OpMode {
         if (pollenSS.getStatus().equals(enums.shooter.ERROR) || nectarSS.getStatus().equals(enums.shooter.ERROR)) ledss.setColor(Constants.LED.ERROR);
         else if (pollenSS.getStatus().equals(enums.shooter.REVVING) || nectarSS.getStatus().equals(enums.shooter.REVVING) || pollenTS.getStatus().equals(enums.turret.TURNING) || nectarTS.getStatus().equals(enums.turret.TURNING)) ledss.setColor(Constants.LED.REVVING);
         else if (ready) ledss.setColor(Constants.LED.READY);
-        // else if (intake full) ledss.setColor(Constants.LED.FULL);
+        else if (full) ledss.setColor(Constants.LED.FULL);
         else ledss.setColor(Constants.LED.IDLE);
         // telemetry
-        telemetryM.addData(true, "PollenSS", pollenSS.telemetry());
-        telemetryM.addData(true, "NectarSS", nectarSS.telemetry());
-        telemetryM.addData(true, "PollenTS", pollenTS.telemetry());
-        telemetryM.addData(true, "NectarTS", nectarTS.telemetry());
+        telemetryM.addLine("LUNALA Team 35707");
+        telemetryM.addLine(true, "------DEBUG------");
+        telemetryM.addData(true, "Loop Time", loop.milliseconds());
+        telemetryM.addLine(true, pollenSS.telemetry());
+        telemetryM.addLine(true, nectarSS.telemetry());
+        telemetryM.addLine(true, pollenTS.telemetry());
+        telemetryM.addLine(true, nectarTS.telemetry());
+        telemetryM.addLine(true, "------DEBUG------");
         telemetryM.update();
+        loop.reset();
     }
 }
